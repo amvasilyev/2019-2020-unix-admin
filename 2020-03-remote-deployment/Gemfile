@@ -1,0 +1,12 @@
+source "https://rubygems.org"
+
+gem 'tilt'
+gem 'roda'
+
+group :development do
+  gem 'rerun'
+end
+
+group :deployment do
+  gem 'net-ssh'
+end
