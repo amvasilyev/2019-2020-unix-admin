@@ -1,19 +1,22 @@
 #!/usr/bin/env ruby
 
+require 'net/scp'
 require 'net/ssh'
 
 require 'erb'
 require 'tmpdir'
 
 REQUIRED_RUBY_VERSION='2.6.5'
-APP_DIR = File.expand_path('~/automatic-deployment/project')
+APP_DIR = File.expand_path('/srv/roda-app')
 SERVICE_NAME = 'application'
+
 
 class Deploy
   def deploy(host, user, password)
     Net::SSH.start(host, user, password: password) do |connection|
       @connection = connection
-      install_ruby
+      # install_ruby
+      copy_application_files
       # patch_path
       # install_required_gems(APP_DIR)
       # setup_systemd_service(APP_DIR)
@@ -40,12 +43,23 @@ class Deploy
       command = "cd #{dir} && #{command}"
     end
     @connection.exec!(command) do |ch, channel, data|
-      puts data
+      print data
     end
     # if result.exitstatus != 0
     #   puts "Command #{command} finished with error"
     #   exit(1)
     # end
+  end
+
+  def copy_application_files
+    temp_dir = '/tmp/temp-app-dir'
+    checked_run('sudo', 'rm', '-rf', temp_dir)
+    puts 'Uploading application files'
+    scp = @connection.scp
+    scp.upload!(File.expand_path('..', __dir__), temp_dir, recursive: true)
+    checked_run('sudo', 'mkdir', '-p', APP_DIR)
+    checked_run('sudo', 'cp', '-R', File.join(temp_dir, '*'), APP_DIR)
+    checked_run('sudo', 'rm', '-rf', temp_dir)
   end
 
   def patch_path
