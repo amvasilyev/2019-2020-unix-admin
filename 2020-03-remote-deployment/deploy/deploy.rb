@@ -9,6 +9,7 @@ require 'tmpdir'
 REQUIRED_RUBY_VERSION='2.6.5'
 APP_DIR = File.expand_path('/srv/roda-app')
 SERVICE_NAME = 'application'
+APP_USER = 'roda-app'
 
 
 class Deploy
@@ -17,8 +18,8 @@ class Deploy
       @connection = connection
       # install_ruby
       copy_application_files
-      # patch_path
-      # install_required_gems(APP_DIR)
+      install_required_gems(APP_DIR)
+      create_app_user(APP_USER, APP_DIR)
       # setup_systemd_service(APP_DIR)
       # enable_systemd_service
     end
@@ -51,6 +52,13 @@ class Deploy
     # end
   end
 
+  def valid_command?(*args)
+    command = args.join(' ')
+    puts "Checking #{command}"
+    result = @connection.exec!(command)
+    result.exitstatus == 0
+  end
+
   def copy_application_files
     temp_dir = '/tmp/temp-app-dir'
     checked_run('sudo', 'rm', '-rf', temp_dir)
@@ -62,17 +70,24 @@ class Deploy
     checked_run('sudo', 'rm', '-rf', temp_dir)
   end
 
-  def patch_path
-    ENV['PATH'] = ruby_installation_path + ':' + ENV['PATH']
-  end
-
   def ruby_installation_path
-    File.expand_path("~/.rubies/ruby-#{REQUIRED_RUBY_VERSION}/bin") 
+    File.expand_path("/opt/rubies/ruby-#{REQUIRED_RUBY_VERSION}/bin") 
   end
 
   def install_required_gems(application_directory)
-    Dir.chdir(application_directory)
-    checked_run('bundle', 'install')
+    checked_run('sudo', File.join(ruby_installation_path, 'bundle'),
+      'install', '--gemfile', File.join(application_directory, 'Gemfile'),
+      '--jobs=4', '--retry=3',
+      '--without=development deployment'
+    )
+  end
+
+  def create_app_user(user_name, application_directory)
+    unless valid_command?('id', user_name)
+      checked_run('sudo', 'useradd', user_name, '--home-dir', application_directory,
+        '-M', '-s', '/bin/bash')
+    end
+    checked_run('sudo', 'chown', "#{user_name}:", "-R", application_directory)
   end
 
   def setup_systemd_service(application_directory)
