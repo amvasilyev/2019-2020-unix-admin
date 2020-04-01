@@ -1,6 +1,9 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    bcrypt_pbkdf (1.0.1)
+    bcrypt_pbkdf (1.0.1-x64-mingw32)
+    ed25519 (1.2.4)
     ffi (1.11.3)
     ffi (1.11.3-x64-mingw32)
     listen (3.2.0)
@@ -22,6 +25,8 @@ PLATFORMS
   x64-mingw32
 
 DEPENDENCIES
+  bcrypt_pbkdf
+  ed25519
   net-ssh
   rerun
   roda
