@@ -1,0 +1,32 @@
+FROM debian:buster as builder
+
+RUN apt-get update &&\
+   apt-get install -y \
+     build-essential \
+     install-info \
+     libncurses-dev \
+     wget
+     
+RUN mkdir /build
+WORKDIR /build
+
+RUN wget http://ne.di.unimi.it/ne-3.3.0.tar.gz && \
+  tar xf ne-3.3.0.tar.gz && \
+  cd ne-3.3.0 && \
+  PREFIX=/opt/ne make build && \
+  PREFIX=/opt/ne make install
+
+FROM debian:buster as packer
+
+# Install libncurses
+RUN apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+       libncurses6 \ 
+    && apt-get clean \
+    && rm -rf /var/cache/apt/archives/* \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && truncate -s 0 /var/log/*log
+
+COPY --from=builder /opt/ne /opt/ne
+
+ENTRYPOINT ["/opt/ne/bin/ne"]
