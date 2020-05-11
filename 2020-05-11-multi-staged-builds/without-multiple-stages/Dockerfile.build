@@ -1,0 +1,21 @@
+from debian:buster
+
+RUN apt-get update &&\
+   apt-get install -y \
+     build-essential \
+     install-info \
+     libncurses-dev \
+     wget
+     
+RUN mkdir /build
+WORKDIR /build
+
+RUN wget http://ne.di.unimi.it/ne-3.3.0.tar.gz && \
+  tar xf ne-3.3.0.tar.gz && \
+  cd ne-3.3.0 && \
+  PREFIX=/opt/ne make build && \
+  PREFIX=/opt/ne make install
+
+WORKDIR /opt
+
+RUN tar czf ne.tgz ne

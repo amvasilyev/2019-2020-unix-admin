@@ -1,0 +1,15 @@
+from debian:buster
+
+# Install libncurses
+RUN apt-get update -qq \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -yq --no-install-recommends \
+       libncurses6 \ 
+    && apt-get clean \
+    && rm -rf /var/cache/apt/archives/* \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* \
+    && truncate -s 0 /var/log/*log
+
+COPY ne.tgz /opt/ne.tgz
+RUN tar xf /opt/ne.tgz -C /opt
+
+ENTRYPOINT ["/opt/ne/bin/ne"]
